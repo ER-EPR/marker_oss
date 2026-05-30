@@ -39,6 +39,9 @@ ENV PATH="/inference/.venv/bin:$PATH"
 # torch is pinned to 2.8 in pyproject so we can do this
 RUN uv pip install https://github.com/Dao-AILab/flash-attention/releases/download/v2.8.3/flash_attn-2.8.3+cu12torch2.8cxx11abiTRUE-cp313-cp313-linux_x86_64.whl
 
+# --- [新增 1]: 安装 WebUI 所需的轻量依赖 ---
+RUN uv pip install streamlit requests
+
 # Build models into container
 RUN python -c "from transformers.utils import is_flash_attn_2_available; print(is_flash_attn_2_available())"
 RUN python -c "from marker.models import create_model_dict; create_model_dict()"
@@ -47,6 +50,9 @@ RUN python -c "from marker.util import download_font; download_font()"
 COPY inference/ /inference/inference/
 COPY supervisord.conf /inference/supervisord.conf
 COPY run.sh /inference/run.sh
+
+# --- [新增 2]: 将我们写好的前端脚本复制进容器 ---
+COPY webui.py /inference/webui.py
 
 ENV PYTHONUNBUFFERED=1
 
@@ -57,5 +63,6 @@ RUN mkdir /data
 # Make run.sh executable and expose port 8000
 RUN chmod +x /inference/run.sh
 EXPOSE 8000
+EXPOSE 8501
 
 CMD ["/inference/run.sh"]
